@@ -6,11 +6,11 @@ This repository contains the code for our course project for CS663 - Fundamental
 * Yash Shah (@ys1998)
 
 ## Procedure
-See the ![report](report.pdf).
+See the [report](report.pdf).
 
 ## Results
 ### 1. Using SVMs followed by Graph Cut Optimized Labelling
-For details see the ![report](report.pdf).
+For details see the [report](report.pdf).
 
 ### 2. Using k-Nearest Neighbor Search
 #### (a) SURF + FFT + Position features
