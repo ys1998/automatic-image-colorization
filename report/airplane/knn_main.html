@@ -1,0 +1,280 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>knn_main</title><meta name="generator" content="MATLAB 9.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-11-24"><meta name="DC.source" content="knn_main.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Constants/Parameters</a></li><li><a href="#3">Reading all files in the directory and storing them for training</a></li><li><a href="#4">Selection of random pixels for each image and extraction of features</a></li><li><a href="#5">Prediction</a></li><li><a href="#6">Conversion to RGB</a></li></ul></div><pre class="codeinput"><span class="keyword">function</span> [] = knn_main(directory, gray_image_path)
+</pre><h2 id="2">Constants/Parameters</h2><pre class="codeinput">rng(1);
+directory = <span class="string">'./images/airplane'</span>; <span class="comment">% path of directory</span>
+gray_image_path = <span class="string">'./gray_images/gr_airplane.png'</span>; <span class="comment">% path to input grayscale image</span>
+random_samples = 5000;
+max_images = 5;
+H = 128;
+W = 128;
+edge_length = 11;
+num_neighbors = 3;
+feature_length = edge_length^2 + 128*3;
+
+training_images = zeros(max_images,H,W,3);
+num_images = 0;
+</pre><h2 id="3">Reading all files in the directory and storing them for training</h2><pre class="codeinput">tic;
+Files=dir(directory);
+<span class="keyword">for</span> k=1:length(Files)
+   <span class="keyword">if</span>(strcmp(Files(k).name(1),<span class="string">'.'</span>) || strcmp(Files(k).name,<span class="string">'..'</span>))
+       <span class="keyword">continue</span>;
+   <span class="keyword">end</span>
+   num_images = num_images + 1;
+   I1 = imread(strcat(directory,<span class="string">'/'</span>,Files(k).name));
+   I1 = imresize(I1, [H W]);
+   disp([<span class="string">'Training image '</span>, num2str(k-2)]);
+   figure; imshow(I1);
+   snapnow;
+   training_images(num_images,:,:,:) = rgb2lab(I1);
+<span class="keyword">end</span>
+
+L(:,:,:) = training_images(:,:,:,1); <span class="comment">% extract luminance values</span>
+
+fprintf(<span class="string">'Images read \n'</span>);
+toc;
+</pre><pre class="codeoutput">Training image 1
+</pre><img vspace="5" hspace="5" src="knn_main_01.png" alt=""> <pre class="codeoutput">Images read 
+Elapsed time is 0.442204 seconds.
+</pre><h2 id="4">Selection of random pixels for each image and extraction of features</h2><pre class="codeinput">tic;
+feature_pixels = zeros(random_samples, 2); <span class="comment">% to store x and y</span>
+features = zeros(num_images*random_samples, feature_length);
+values = zeros(num_images*random_samples, 3);
+
+<span class="keyword">for</span> k=1:num_images
+    <span class="comment">% feature_pixels(:, 1) = randi([(edge_length-1)/2, H-(edge_length-1)/2], [random_samples, 1]);</span>
+    <span class="comment">% feature_pixels(:, 2) = randi([(edge_length-1)/2, W-(edge_length-1)/2], [random_samples, 1]);</span>
+    feature_pixels(:, 1) = randi([1, H], [random_samples, 1]);
+    feature_pixels(:, 2) = randi([1, W], [random_samples, 1]);
+    feature_image = squeeze(L(k,:,:));
+    features((k-1)*random_samples+1:k*random_samples, :) = extract_feats(feature_image, feature_pixels, edge_length);
+    <span class="keyword">for</span> i=1:random_samples
+        values((k-1)*random_samples+i, :) = training_images(k, feature_pixels(i, 1), feature_pixels(i, 2), :);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+fprintf(<span class="string">'Feature extraction done \n'</span>);
+toc;
+</pre><pre class="codeoutput">Feature extraction done 
+Elapsed time is 0.165835 seconds.
+</pre><h2 id="5">Prediction</h2><pre class="codeinput">grey = imread(gray_image_path);
+grey = imresize(grey, [H W]);
+disp(<span class="string">'Input grayscale image'</span>);
+figure; imshow(grey);
+snapnow;
+grey_lab = rgb2lab(repmat(grey, [1 1 3]));
+L_test = grey_lab(:, :, 1);
+all_pixels = zeros(H*W, 2);
+<span class="keyword">for</span> i=1:H
+    <span class="keyword">for</span> j=1:W
+        all_pixels((j-1)*H + i, :) = [i j];
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+features_grey = extract_feats(L_test, all_pixels, edge_length);
+<span class="comment">% features_grey now containes feature vector for each pixel, in column</span>
+<span class="comment">% major order</span>
+
+<span class="comment">% find 'num_neighbors' nearest neighbors for each pixel in test image</span>
+[knn_idx, dist] = knnsearch(features, features_grey, <span class="string">'K'</span>, num_neighbors);
+</pre><pre class="codeoutput">Input grayscale image
+</pre><img vspace="5" hspace="5" src="knn_main_02.png" alt=""> <pre class="codeoutput">Warning: Converting input data
+to single. 
+</pre><img vspace="5" hspace="5" src="knn_main_03.png" alt=""> <h2 id="6">Conversion to RGB</h2><pre class="codeinput">res_best = zeros(H, W, 3);
+res_avg = zeros(H, W, 3);
+<span class="keyword">for</span> i=1:H
+    <span class="keyword">for</span> j=1:W
+        res_best(i,j,1) = L_test(i,j);
+        res_avg(i,j,1) = L_test(i,j);
+        res_best(i,j, 2:3) = values(knn_idx((j-1)*H + i, 1), 2:3);
+        <span class="keyword">if</span>(dist((j-1)*H+i, 1) &lt; 1e-3)
+            res_avg(i, j, 2:3) = values(knn_idx((j-1)*H + i, 1), 2:3);
+        <span class="keyword">else</span>
+            res_avg(i, j, 2:3) = sum(values(knn_idx((j-1)*H+i, :), 2:3)./dist((j-1)*H+i, :)')./sum(1./dist((j-1)*H+i,:));
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+disp(<span class="string">'Best neighbor colorization'</span>);
+figure; imshow(lab2rgb(res_best));
+snapnow;
+disp(<span class="string">'Averaged neighbor colorization'</span>);
+figure; imshow(lab2rgb(res_avg));
+snapnow;
+</pre><pre class="codeoutput">Best neighbor colorization
+</pre><img vspace="5" hspace="5" src="knn_main_04.png" alt=""> <pre class="codeoutput">Averaged neighbor colorization
+</pre><img vspace="5" hspace="5" src="knn_main_05.png" alt=""> <pre class="codeinput"><span class="keyword">end</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function [] = knn_main(directory, gray_image_path)
+%% Constants/Parameters
+rng(1);
+directory = './images/airplane'; % path of directory
+gray_image_path = './gray_images/gr_airplane.png'; % path to input grayscale image
+random_samples = 5000;
+max_images = 5;
+H = 128;
+W = 128;
+edge_length = 11;
+num_neighbors = 3;
+feature_length = edge_length^2 + 128*3;
+
+training_images = zeros(max_images,H,W,3);
+num_images = 0;
+
+%% Reading all files in the directory and storing them for training
+tic;
+Files=dir(directory);
+for k=1:length(Files)
+   if(strcmp(Files(k).name(1),'.') || strcmp(Files(k).name,'..'))
+       continue;
+   end
+   num_images = num_images + 1;
+   I1 = imread(strcat(directory,'/',Files(k).name));
+   I1 = imresize(I1, [H W]);
+   disp(['Training image ', num2str(k-2)]);
+   figure; imshow(I1);
+   snapnow;
+   training_images(num_images,:,:,:) = rgb2lab(I1);
+end
+
+L(:,:,:) = training_images(:,:,:,1); % extract luminance values
+           
+fprintf('Images read \n');
+toc;
+
+%% Selection of random pixels for each image and extraction of features
+tic;
+feature_pixels = zeros(random_samples, 2); % to store x and y 
+features = zeros(num_images*random_samples, feature_length); 
+values = zeros(num_images*random_samples, 3);
+
+for k=1:num_images
+    % feature_pixels(:, 1) = randi([(edge_length-1)/2, H-(edge_length-1)/2], [random_samples, 1]);
+    % feature_pixels(:, 2) = randi([(edge_length-1)/2, W-(edge_length-1)/2], [random_samples, 1]);
+    feature_pixels(:, 1) = randi([1, H], [random_samples, 1]);
+    feature_pixels(:, 2) = randi([1, W], [random_samples, 1]);
+    feature_image = squeeze(L(k,:,:));
+    features((k-1)*random_samples+1:k*random_samples, :) = extract_feats(feature_image, feature_pixels, edge_length);
+    for i=1:random_samples
+        values((k-1)*random_samples+i, :) = training_images(k, feature_pixels(i, 1), feature_pixels(i, 2), :); 
+    end
+end 
+
+fprintf('Feature extraction done \n');
+toc;
+
+%% Prediction
+
+grey = imread(gray_image_path);
+grey = imresize(grey, [H W]);
+disp('Input grayscale image');
+figure; imshow(grey);
+snapnow;
+grey_lab = rgb2lab(repmat(grey, [1 1 3]));
+L_test = grey_lab(:, :, 1);
+all_pixels = zeros(H*W, 2);
+for i=1:H
+    for j=1:W
+        all_pixels((j-1)*H + i, :) = [i j];
+    end
+end
+
+features_grey = extract_feats(L_test, all_pixels, edge_length);  
+% features_grey now containes feature vector for each pixel, in column
+% major order
+
+% find 'num_neighbors' nearest neighbors for each pixel in test image
+[knn_idx, dist] = knnsearch(features, features_grey, 'K', num_neighbors);
+
+%% Conversion to RGB
+res_best = zeros(H, W, 3);
+res_avg = zeros(H, W, 3);
+for i=1:H
+    for j=1:W
+        res_best(i,j,1) = L_test(i,j);
+        res_avg(i,j,1) = L_test(i,j);
+        res_best(i,j, 2:3) = values(knn_idx((j-1)*H + i, 1), 2:3);
+        if(dist((j-1)*H+i, 1) < 1e-3)
+            res_avg(i, j, 2:3) = values(knn_idx((j-1)*H + i, 1), 2:3);
+        else
+            res_avg(i, j, 2:3) = sum(values(knn_idx((j-1)*H+i, :), 2:3)./dist((j-1)*H+i, :)')./sum(1./dist((j-1)*H+i,:));
+        end
+    end
+end    
+
+disp('Best neighbor colorization');
+figure; imshow(lab2rgb(res_best));
+snapnow;
+disp('Averaged neighbor colorization');
+figure; imshow(lab2rgb(res_avg));
+snapnow;
+end
+##### SOURCE END #####
+--></body></html>
